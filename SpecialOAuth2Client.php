@@ -162,17 +162,14 @@ class SpecialOAuth2Client extends SpecialPage {
 	protected function _userHandling( $response ) {
 		global $wgOAuth2Client, $wgAuth, $wgRequest;
 
-		if ($wgOAuth2Client['configuration']['authz_callback']($response)) {
-			$authzResult = $wgOAuth2Client['configuration']['authz_callback']($response);
-			if ($authzResult) {
-				if (isset($wgOAuth2Client['configuration']['authz_failure_message'])) {
-					$callback_failure_message = $wgOAuth2Client['configuration']['authz_failure_message'];
-				} else {
-					$callback_failure_message = 'Not authorized';
-				}
-				throw new MWException($callback_failure_message);
-				die();
-			}
+		if (
+		 			isset($wgOAuth2Client['configuration']['authz_callback'])
+		 			&& false === $wgOAuth2Client['configuration']['authz_callback']($response)
+		 		) {
+		 			$callback_failure_message = isset($wgOAuth2Client['configuration']['authz_failure_message'])
+		 				? $wgOAuth2Client['configuration']['authz_failure_message']
+		 				: 'Not authorized';
+		 			throw new MWException($callback_failure_message);
 		}
 
 		$username = JsonHelper::extractValue($response, $wgOAuth2Client['configuration']['username']);
@@ -183,7 +180,19 @@ class SpecialOAuth2Client extends SpecialPage {
 			throw new MWException('Could not create user with username:' . $username);
 			die();
 		}
-		$user->setRealName($username);
+
+		if (
+		 			isset($wgOAuth2Client['configuration']['authz_set_custom_realname'])
+		 			&& true === $wgOAuth2Client['configuration']['authz_set_custom_realname']
+					&& isset($wgOAuth2Client['configuration']['authz_custom_realname'])
+		 		) {
+					$custom_realname = $wgOAuth2Client['configuration']['authz_custom_realname'];
+		 			$realname = JsonHelper::extractValue($response, $custom_realname);
+					$user->setRealName($realname);
+		} else {
+			$user->setRealName($username);
+		}
+
 		$user->setEmail($email);
 		$user->load();
 		if ( !( $user instanceof User && $user->getId() ) ) {
