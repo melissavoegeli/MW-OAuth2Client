@@ -181,14 +181,10 @@ class SpecialOAuth2Client extends SpecialPage {
 			die();
 		}
 
-		if (
-		 			isset($wgOAuth2Client['configuration']['authz_set_custom_realname'])
-		 			&& true === $wgOAuth2Client['configuration']['authz_set_custom_realname']
-					&& isset($wgOAuth2Client['configuration']['authz_custom_realname'])
-		 		) {
-					$custom_realname = $wgOAuth2Client['configuration']['authz_custom_realname'];
-		 			$realname = JsonHelper::extractValue($response, $custom_realname);
-					$user->setRealName($realname);
+		if ( isset($wgOAuth2Client['configuration']['authz_custom_realname']) ) {
+			$custom_realname = $wgOAuth2Client['configuration']['authz_custom_realname'];
+			$realname = JsonHelper::extractValue($response, $custom_realname);
+			$user->setRealName($realname);
 		} else {
 			$user->setRealName($username);
 		}
